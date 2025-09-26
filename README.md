@@ -31,10 +31,8 @@ cd wikidata-project
 
 Subsequently, it is necessary to install the required Python dependencies. The djongo package facilitates the connection to MongoDB, while SPARQLWrapper is utilized for executing SPARQL queries.
 
-.. code:: bash
-
-    pip install djongo\
-    pip install SPARQLWrapper
+    pip install djongo
+    pip install sparqlwrapper
 
 
 ### **3. Database Configuration**
