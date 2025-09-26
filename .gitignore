@@ -1,0 +1,28 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# C extensions
+.cproject
+.externalToolBuilders
+.settings
+.project
+
+# Environment
+.env
+venv/
+
+# Django-specific files
+*.log
+local_settings.py
+db.sqlite3
+.DS_Store
+
+# IDE-specific files
+.idea/
+.vscode/
+
+# Jupyter Notebook files
+.ipynb_checkpoints
