@@ -31,14 +31,17 @@ cd wikidata-project
 
 Subsequently, it is necessary to install the required Python dependencies. The djongo package facilitates the connection to MongoDB, while SPARQLWrapper is utilized for executing SPARQL queries.
 
-pip install djongo\
-pip install SPARQLWrapper
+.. code:: bash
+
+    pip install djongo\
+    pip install SPARQLWrapper
 
 
 ### **3. Database Configuration**
 
 The database connection must be configured within the wikidata/settings.py file. The provided default settings are configured to connect to a local MongoDB instance. The database name can be customized as needed.
 
+```bash
 DATABASES = {\
     'default': {\
         'ENGINE': 'djongo',\
@@ -47,15 +50,17 @@ DATABASES = {\
         'PORT': 27017,\
     }\
 }
+```
 
 
 ### **4. Migration Application**
 
 The final setup step involves applying the database migrations. These two commands instruct the Django framework to create the necessary collections within the MongoDB database for data storage.
 
+```bash
 python manage.py makemigrations\
 python manage.py migrate
-
+```
 
 ## **Application Usage**
 
@@ -66,7 +71,9 @@ The application's functionality is divided into two primary operations: data ret
 
 This view is responsible for the data retrieval process. It connects to the Wikidata SPARQL endpoint, executes a specified query, and stores the resulting data in the project's MongoDB database. To initiate this process, the Django development server must be started.
 
+```bash
 python manage.py runserver
+```
 
 Then, navigate to the following URL in a web browser:
 
