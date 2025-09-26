@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Influential Scientists Data</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for clean presentation of consolidated text */
+        .data-cell {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 0.875rem; /* text-sm */
+            line-height: 1.4;
+            color: #4b5563; /* text-gray-600 */
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans antialiased min-h-screen p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto">
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-extrabold text-gray-900 tracking-tight sm:text-5xl">
+                Top Influential Scientists (Wikidata)
+            </h1>
+            <p class="mt-3 text-lg text-gray-500">
+                Data is fetched using a consolidated SPARQL query and stored in MongoDB.
+            </p>
+        </header>
+
+        <!-- Action and Search Bar -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6 space-y-4 md:space-y-0 md:space-x-4">
+            <input 
+                type="text" 
+                id="search-input" 
+                placeholder="Search scientist names or fields..." 
+                class="w-full md:w-1/3 p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 transition duration-150"
+            >
+            <a href="/data/fetch-data/" 
+               class="w-full md:w-auto px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-300 transform hover:scale-105 text-center">
+                Refresh Data (Fetch from Wikidata)
+            </a>
+        </div>
+        
+        <!-- Data Table Card -->
+        <div class="bg-white shadow-xl rounded-xl overflow-hidden">
+            {% if data %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
+                                Scientist (Name)
+                            </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-3/4">
+                                Consolidated Information
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200" id="data-table-body">
+                        {% for item in data %}
+                        <tr class="hover:bg-gray-50 transition duration-150 data-row">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 subject-cell">
+                                {{ item.subject }}
+                            </td>
+                            <td class="px-6 py-4 data-cell object-cell">
+                                {{ item.object }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <!-- No Data Message -->
+            <div class="p-12 text-center text-gray-500 text-lg">
+                <p>No data available. Please click "Refresh Data" to fetch the latest entries from Wikidata.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- JavaScript for Live Search Filtering -->
+    <script>
+        document.getElementById('search-input').addEventListener('keyup', function() {
+            const filter = this.value.toUpperCase();
+            const rows = document.getElementById('data-table-body').getElementsByClassName('data-row');
+            
+            Array.from(rows).forEach(row => {
+                // Get text content from both the subject (name) and object (details) cells
+                const nameText = row.querySelector('.subject-cell').textContent.toUpperCase();
+                const detailsText = row.querySelector('.object-cell').textContent.toUpperCase();
+                
+                // Check if the filter matches either the name or the details
+                if (nameText.indexOf(filter) > -1 || detailsText.indexOf(filter) > -1) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            });
+        });
+    </script>
+</body>
+</html>

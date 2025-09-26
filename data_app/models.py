@@ -1,26 +1,23 @@
 from django.db import models
 
-# Create your models here.
-
 class SparqlResult(models.Model):
     """
-    A model to store the results from a SPARQL query.
+    A model to store consolidated results from a SPARQL query.
     
-    Since SPARQL queries often return a set of subject-predicate-object triples,
-    this model is designed to store one such triple per instance.
+    The subject stores the entity's name (Scientist), and the object stores 
+    all consolidated details (dates, works, fields).
     """
-    subject = models.CharField(max_length=255)
-    predicate = models.CharField(max_length=255)
-    object = models.CharField(max_length=255)
+    # Stores the name of the Scientist/Subject
+    subject = models.CharField(max_length=500)
+    
+    # Stores the consolidated, multi-line information block from GROUP_CONCAT
+    object = models.CharField(max_length=5000)
 
     def __str__(self):
         """
         String representation of the model instance.
         """
-        return f'{self.subject} - {self.predicate} - {self.object}'
+        return self.subject
 
     class Meta:
-        # Djongo doesn't require a primary key to be explicitly defined,
-        # it will use MongoDB's `_id` field automatically.
-        # This is here as an example, but can be omitted.
         pass

@@ -1,62 +1,99 @@
+# data_app/views.py
+from urllib.error import HTTPError
 from django.shortcuts import render
 from django.http import HttpResponse
-from SPARQLWrapper import SPARQLWrapper, JSON
 from .models import SparqlResult
+from SPARQLWrapper import SPARQLWrapper, JSON# <-- HTTPError is misplaced here!
 
-# Create your views here.
+# Define the SPARQL endpoint for Wikidata
+sparql = SPARQLWrapper("https://query.wikidata.org/sparql")
 
 def fetch_and_store_data(request):
     """
-    Fetches data from a SPARQL endpoint and stores it in the database.
-    This version fetches painters and their birth dates.
+    Fetches consolidated data for the top 20 influential scientists from Wikidata
+    using a robust SPARQL query and stores it in MongoDB.
+    
+    Includes a FILTER to ensure only entries with a defined English label are stored,
+    preventing broken QID entries like "Q762".
     """
-    # A SPARQL query to get painters and their birth dates.
-    query_string = """
-    SELECT ?painter ?painterLabel ?date WHERE {
-      ?painter wdt:P31 wd:Q5;  # instance of human
-               wdt:P106 wd:Q1028181; # occupation is painter
-               wdt:P569 ?date.       # date of birth
-      SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+    # Define the SPARQL query to fetch Scientist data
+    query = """
+    SELECT ?scientist ?scientistLabel (GROUP_CONCAT(DISTINCT ?birthDateLabel; separator="; ") AS ?birthDates)
+           (GROUP_CONCAT(DISTINCT ?deathDateLabel; separator="; ") AS ?deathDates)
+           (GROUP_CONCAT(DISTINCT ?fieldOfWorkLabel; separator="; ") AS ?fieldsOfWork)
+           (GROUP_CONCAT(DISTINCT ?notableWorkLabel; separator="; ") AS ?notableWorks)
+    WHERE 
+    {
+      ?scientist wdt:P31 wd:Q5;        # Instance of Human
+                 wdt:P106 wd:Q901;     # Occupation: Scientist
+                 wdt:P569 ?birthDate.
+      
+      OPTIONAL { ?scientist wdt:P570 ?deathDate. }
+      OPTIONAL { ?scientist wdt:P101 ?fieldOfWork. }
+      OPTIONAL { ?scientist wdt:P800 ?notableWork. }
+      
+      # Labels Service: Get human-readable labels for everything
+      SERVICE wikibase:label {
+        bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en".
+        ?scientist rdfs:label ?scientistLabel.
+        ?birthDate rdfs:label ?birthDateLabel.
+        ?deathDate rdfs:label ?deathDateLabel.
+        ?fieldOfWork rdfs:label ?fieldOfWorkLabel.
+        ?notableWork rdfs:label ?notableWorkLabel.
+      }
+      
+      # FIX for QID entries: Only include results where a scientistLabel is present
+      FILTER(LANG(?scientistLabel) = "en")
     }
-    LIMIT 10
+    GROUP BY ?scientist ?scientistLabel
+    LIMIT 20
     """
 
-    # Set up the SPARQL endpoint
-    sparql = SPARQLWrapper("https://query.wikidata.org/sparql")
-    sparql.setQuery(query_string)
+    sparql.setQuery(query)
     sparql.setReturnFormat(JSON)
 
     try:
+        # CRITICAL: Delete old data before saving new consolidated data
+        SparqlResult.objects.all().delete()
+        
         results = sparql.query().convert()
         
-        # Clear existing data to avoid duplicates for this example
-        SparqlResult.objects.all().delete()
-
-        # Iterate through the results and save to the database
-        for result in results["results"]["bindings"]:
-            subject = result["painterLabel"]["value"]
-            predicate = "date of birth"
-            object_val = result["date"]["value"]
+        # Process and save the consolidated results
+        for item in results["results"]["bindings"]:
+            # Use scientistLabel, which is guaranteed to be present and in English due to the FILTER
+            scientist_name = item.get("scientistLabel", {}).get("value", "N/A")
             
-            # Check if a similar record already exists to prevent duplicates
-            if not SparqlResult.objects.filter(subject=subject, object=object_val).exists():
-                SparqlResult.objects.create(
-                    subject=subject,
-                    predicate=predicate,
-                    object=object_val
-                )
+            # Aggregate all details into a single string for the 'object' field
+            details = [
+                f"Born: {item.get('birthDates', {}).get('value', 'Unknown')}",
+                f"Died: {item.get('deathDates', {}).get('value', 'Still living')}",
+                f"Fields: {item.get('fieldsOfWork', {}).get('value', 'N/A')}",
+                f"Notable Works: {item.get('notableWorks', {}).get('value', 'N/A')}"
+            ]
+            consolidated_object = "\n".join(details)
+            
+            # Save the new, clean consolidated entry
+            SparqlResult.objects.create(
+                subject=scientist_name, 
+                object=consolidated_object
+            )
+        
+        return HttpResponse("Data successfully fetched, consolidated, and stored in the database! (20 clean entries)")
 
-        message = "Data successfully fetched and stored in the database!"
+    except HTTPError as e:
+        # Handle network/server errors from Wikidata
+        return HttpResponse(f"Error fetching data from Wikidata (HTTP Error): {e.response.status} - {e.response.reason}", status=e.response.status)
     except Exception as e:
-        message = f"An error occurred: {e}"
-    
-    return HttpResponse(message)
+        # Catch-all for any other errors (e.g., database connection, query parsing)
+        return HttpResponse(f"An unexpected error occurred during data fetching or storage: {e}", status=500)
 
 def display_data(request):
     """
-    Fetches all stored data and displays it on a web page.
+    Renders the data display template with all currently stored SPARQL results.
     """
-    # Retrieve all objects from the SparqlResult collection
+    # Fetch all data stored in the database
     data = SparqlResult.objects.all()
-    # Pass the retrieved data to the template for rendering
-    return render(request, 'data_display.html', {'data': data})
+    
+    # Pass the data to the template for display
+    context = {'data': data}
+    return render(request, 'data_app/data_display.html', context)
