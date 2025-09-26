@@ -79,7 +79,7 @@ WSGI_APPLICATION = 'wikidata.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'djongo',
-        'NAME': 'my_django_db',
+        'NAME': 'my_django_db_v2',
         'HOST': 'localhost',
         'PORT': 27017,
     }
