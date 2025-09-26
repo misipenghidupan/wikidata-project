@@ -42,13 +42,13 @@ Subsequently, it is necessary to install the required Python dependencies. The d
 The database connection must be configured within the wikidata/settings.py file. The provided default settings are configured to connect to a local MongoDB instance. The database name can be customized as needed.
 
 ```bash
-DATABASES = {\
-    'default': {\
-        'ENGINE': 'djongo',\
-        'NAME': 'my\_django\_db',  # The name of the MongoDB database\
-        'HOST': 'localhost',\
-        'PORT': 27017,\
-    }\
+DATABASES = {
+    'default': {
+        'ENGINE': 'djongo',
+        'NAME': 'my\_django\_db',  # The name of the MongoDB database
+        'HOST': 'localhost',
+        'PORT': 27017,
+    }
 }
 ```
 
@@ -58,7 +58,7 @@ DATABASES = {\
 The final setup step involves applying the database migrations. These two commands instruct the Django framework to create the necessary collections within the MongoDB database for data storage.
 
 ```bash
-python manage.py makemigrations\
+python manage.py makemigrations
 python manage.py migrate
 ```
 
